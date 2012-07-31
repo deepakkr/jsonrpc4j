@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata modelVersion="1.1.0">
+  <groupId>com.googlecode</groupId>
+  <artifactId>jsonrpc4j</artifactId>
+  <version>0.20-SNAPSHOT</version>
+  <versioning>
+    <snapshot>
+      <timestamp>20120221.224030</timestamp>
+      <buildNumber>5</buildNumber>
+    </snapshot>
+    <lastUpdated>20120221224030</lastUpdated>
+    <snapshotVersions>
+      <snapshotVersion>
+        <extension>jar</extension>
+        <value>0.20-20120221.224030-5</value>
+        <updated>20120221224030</updated>
+      </snapshotVersion>
+      <snapshotVersion>
+        <extension>pom</extension>
+        <value>0.20-20120221.224030-5</value>
+        <updated>20120221224030</updated>
+      </snapshotVersion>
+      <snapshotVersion>
+        <classifier>sources</classifier>
+        <extension>jar</extension>
+        <value>0.20-20120221.224030-5</value>
+        <updated>20120221224030</updated>
+      </snapshotVersion>
+    </snapshotVersions>
+  </versioning>
+</metadata>

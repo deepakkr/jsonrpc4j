@@ -1,0 +1,42 @@
+package com.googlecode.jsonrpc4j;
+
+import org.codehaus.jackson.JsonNode;
+
+/**
+ * Exception thrown by a JSON-RPC client when
+ * an error occurs.
+ */
+@SuppressWarnings("serial")
+public class JsonRpcClientException
+	extends Exception {
+
+	private int code;
+	private JsonNode data;
+
+	/**
+	 * Creates the exception.
+	 * @param code the code from the server
+	 * @param message the message from the server
+	 * @param data the data from the server
+	 */
+	public JsonRpcClientException(int code, String message, JsonNode data) {
+		super(message);
+		this.code 	= code;
+		this.data	= data;
+	}
+
+	/**
+	 * @return the code
+	 */
+	public int getCode() {
+		return code;
+	}
+
+	/**
+	 * @return the data
+	 */
+	public JsonNode getData() {
+		return data;
+	}
+
+}
