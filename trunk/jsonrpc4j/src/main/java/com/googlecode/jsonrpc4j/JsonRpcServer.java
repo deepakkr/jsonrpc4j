@@ -793,11 +793,16 @@ public class JsonRpcServer {
 		if (node.isNull()) {
 			return true;
 
-		} else if (node.isNumber()) {
-			return Number.class.isAssignableFrom(type);
-
 		} else if (node.isTextual()) {
 			return String.class.isAssignableFrom(type);
+
+		} else if (node.isNumber()) {
+			return Number.class.isAssignableFrom(type)
+				|| short.class.isAssignableFrom(type)
+				|| int.class.isAssignableFrom(type)
+				|| long.class.isAssignableFrom(type)
+				|| float.class.isAssignableFrom(type)
+				|| double.class.isAssignableFrom(type);
 
 		} else if (node.isArray() && type.isArray()) {
 			return (node.size()>0)

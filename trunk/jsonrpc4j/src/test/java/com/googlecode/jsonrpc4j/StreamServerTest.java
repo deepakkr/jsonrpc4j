@@ -2,6 +2,7 @@ package com.googlecode.jsonrpc4j;
 
 import static org.junit.Assert.*;
 
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.logging.Level;
@@ -21,7 +22,7 @@ public class StreamServerTest {
 	@Before
 	public void setUp()
 		throws Exception {
-		serverSocket = ServerSocketFactory.getDefault().createServerSocket(0, 0);
+		serverSocket = ServerSocketFactory.getDefault().createServerSocket(0, 0, InetAddress.getByName("127.0.0.1"));
 		jsonRpcServer = new JsonRpcServer(new ServiceImpl(), Service.class);
 		jsonRpcClient = new JsonRpcClient();
 	}

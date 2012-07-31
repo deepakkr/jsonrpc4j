@@ -138,6 +138,7 @@ public class JsonRpcServerTest {
 		jsonRpcServer.handle(new ClassPathResource("jsonRpcServerOverLoadedMethodOneIntParamTest.json").getInputStream(), baos);
 
 		String response = baos.toString(JSON_ENCODING);
+		System.out.println("RESPONSE: "+response);
 		JsonNode json = mapper.readTree(response);
 
 		assertEquals("intParam1", json.get("result").textValue());
