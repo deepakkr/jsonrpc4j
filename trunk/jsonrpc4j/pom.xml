@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.googlecode</groupId>
 	<artifactId>jsonrpc4j</artifactId>
-	<version>0.24</version>
+	<version>0.25-SNAPSHOT</version>
 	<name>JSON-RPC for java</name>
 	<packaging>jar</packaging>
 	<url>http://code.google.com/p/jsonrpc4j/</url>
@@ -28,9 +28,9 @@
      | scm configuration
      +-->
 	<scm>
-		<connection>scm:svn:http://jsonrpc4j.googlecode.com/svn/tags/jsonrpc4j-0.24</connection>
-		<developerConnection>scm:svn:https://jsonrpc4j.googlecode.com/svn/tags/jsonrpc4j-0.24</developerConnection>
-		<url>jsonrpc4j.googlecode.com/svn/tags/jsonrpc4j-0.24</url>
+		<connection>scm:svn:http://jsonrpc4j.googlecode.com/svn/trunk/jsonrpc4j</connection>
+		<developerConnection>scm:svn:https://jsonrpc4j.googlecode.com/svn/trunk/jsonrpc4j</developerConnection>
+		<url>jsonrpc4j.googlecode.com/svn/trunk/jsonrpc4j</url>
 	</scm>
 	
 	<!--
