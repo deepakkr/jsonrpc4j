@@ -29,9 +29,9 @@
      | scm configuration
      +-->
 	<scm>
-		<connection>scm:svn:http://jsonrpc4j.googlecode.com/svn/tags/jsonrpc4j-0.24</connection>
-		<developerConnection>scm:svn:https://jsonrpc4j.googlecode.com/svn/tags/jsonrpc4j-0.24</developerConnection>
-		<url>jsonrpc4j.googlecode.com/svn/tags/jsonrpc4j-0.24</url>
+		<connection>scm:svn:http://jsonrpc4j.googlecode.com/svn/trunk/jsonrpc4j</connection>
+		<developerConnection>scm:svn:https://jsonrpc4j.googlecode.com/svn/trunk/jsonrpc4j</developerConnection>
+		<url>jsonrpc4j.googlecode.com/svn/trunk/jsonrpc4j</url>
 	</scm>
 	
 	<!--
