@@ -2,7 +2,7 @@
 #labels Featured,ChangeLog
 
 
-= 0.24 =
+= 0.24 (07/13/2012) =
 
   * made server return same id type that is provided from the client (issue 30)
   * Improvement: Specify Path for JsonRpc Service in Annotation on interface (issue 25)
