@@ -52,10 +52,10 @@ public class JsonRpcServer {
 	private boolean rethrowExceptions 		= false;
 	private boolean allowExtraParams 		= false;
 	private boolean allowLessParams			= false;
-	private ErrorResolver errorResolver	= null;
-	private ObjectMapper mapper;
-	private Object handler;
-	private Class<?> remoteInterface;
+	protected ErrorResolver errorResolver	= null;
+	protected ObjectMapper mapper;
+	protected Object handler;
+	protected Class<?> remoteInterface;
 
 	/**
 	 * Creates the server with the given {@link ObjectMapper} delegating
@@ -212,7 +212,7 @@ public class JsonRpcServer {
 	 * @return the {@link InputStream}
 	 * @throws IOException on error
 	 */
-	private InputStream createInputStream(String method, String id, String params)
+	protected InputStream createInputStream(String method, String id, String params)
 		throws IOException {
 
 		// decode parameters
@@ -237,7 +237,7 @@ public class JsonRpcServer {
 	 *
 	 * @return the class
 	 */
-	private Class<?> getHandlerClass() {
+	protected Class<?> getHandlerClass() {
 		return (remoteInterface != null)
 			? remoteInterface : handler.getClass();
 	}
@@ -250,7 +250,7 @@ public class JsonRpcServer {
 	 * @param ops the {@link OutputStream}
 	 * @throws IOException on error
 	 */
-	private void handleNode(JsonNode node, OutputStream ops)
+	protected void handleNode(JsonNode node, OutputStream ops)
 		throws IOException {
 
 		// handle objects
@@ -276,7 +276,7 @@ public class JsonRpcServer {
 	 * @param ops the {@link OutputStream}
 	 * @throws IOException on error
 	 */
-	private void handleArray(ArrayNode node, OutputStream ops)
+	protected void handleArray(ArrayNode node, OutputStream ops)
 		throws IOException {
 		if (LOGGER.isLoggable(Level.FINE)) {
 			LOGGER.log(Level.FINE, "Handing "+node.size()+" requests");
@@ -299,7 +299,7 @@ public class JsonRpcServer {
 	 * @param ops the {@link OutputStream}
 	 * @throws IOException on error
 	 */
-	private void handleObject(ObjectNode node, OutputStream ops)
+	protected void handleObject(ObjectNode node, OutputStream ops)
 		throws IOException {
 		if (LOGGER.isLoggable(Level.FINE)) {
 			LOGGER.log(Level.FINE, "Request: "+node.toString());
@@ -418,7 +418,7 @@ public class JsonRpcServer {
 	 * @throws IllegalAccessException on error
 	 * @throws InvocationTargetException on error
 	 */
-	private JsonNode invoke(Method m, List<JsonNode> params)
+	protected JsonNode invoke(Method m, List<JsonNode> params)
 		throws IOException,
 		IllegalAccessException,
 		InvocationTargetException {
@@ -453,7 +453,7 @@ public class JsonRpcServer {
 	 * @param data the error data (if any)
 	 * @return the error response
 	 */
-	private ObjectNode createErrorResponse(
+	protected ObjectNode createErrorResponse(
 		String jsonRpc, Object id, int code, String message, Object data) {
 		ObjectNode response = mapper.createObjectNode();
 		ObjectNode error = mapper.createObjectNode();
@@ -487,7 +487,7 @@ public class JsonRpcServer {
 	 * @param result
 	 * @return
 	 */
-	private ObjectNode createSuccessResponse(String jsonRpc, Object id, JsonNode result) {
+	protected ObjectNode createSuccessResponse(String jsonRpc, Object id, JsonNode result) {
 		ObjectNode response = mapper.createObjectNode();
 		response.put("jsonrpc", jsonRpc);
 		if (Integer.class.isInstance(id)) {
@@ -516,7 +516,7 @@ public class JsonRpcServer {
 	 * @param paramsNode the {@link JsonNode} passed as the parameters
 	 * @return the {@link MethodAndArgs}
 	 */
-	private MethodAndArgs findBestMethodByParamsNode(Set<Method> methods, JsonNode paramsNode) {
+	protected MethodAndArgs findBestMethodByParamsNode(Set<Method> methods, JsonNode paramsNode) {
 
 		// no parameters
 		if (paramsNode==null || paramsNode.isNull()) {
@@ -551,7 +551,7 @@ public class JsonRpcServer {
 	 * @param paramNodes the parameters for matching types
 	 * @return the {@link MethodAndArgs}
 	 */
-	private MethodAndArgs findBestMethodUsingParamIndexes(
+	protected MethodAndArgs findBestMethodUsingParamIndexes(
 		Set<Method> methods, int paramCount, ArrayNode paramNodes) {
 
 		// get param count
@@ -650,7 +650,7 @@ public class JsonRpcServer {
 	 * @return the {@link MethodAndArgs}
 	 */
 	@SuppressWarnings("deprecation")
-	private MethodAndArgs findBestMethodUsingParamNames(
+	protected MethodAndArgs findBestMethodUsingParamNames(
 		Set<Method> methods, Set<String> paramNames, ObjectNode paramNodes) {
 
 		// determine param count
@@ -788,7 +788,7 @@ public class JsonRpcServer {
 	 * @param type the {@link Class}
 	 * @return true if the types match, false otherwise
 	 */
-	private boolean isMatchingType(JsonNode node, Class<?> type) {
+	protected boolean isMatchingType(JsonNode node, Class<?> type) {
 
 		if (node.isNull()) {
 			return true;
@@ -840,7 +840,7 @@ public class JsonRpcServer {
 	 * @param value the value to write
 	 * @throws IOException on error
 	 */
-	private void writeAndFlushValue(OutputStream ops, Object value)
+	protected void writeAndFlushValue(OutputStream ops, Object value)
 		throws IOException {
 		mapper.writeValue(new NoCloseOutputStream(ops), value);
 		ops.flush();
@@ -849,9 +849,9 @@ public class JsonRpcServer {
 	/**
 	 * Simple inner class for the {@code findXXX} methods.
 	 */
-	private static class MethodAndArgs {
-		private Method method = null;
-		private List<JsonNode> arguments = new ArrayList<JsonNode>();
+	protected static class MethodAndArgs {
+		protected Method method = null;
+		protected List<JsonNode> arguments = new ArrayList<JsonNode>();
 	}
 
 	/**
@@ -859,7 +859,7 @@ public class JsonRpcServer {
 	 * @param node
 	 * @return
 	 */
-	private Object parseId(JsonNode node) {
+	protected Object parseId(JsonNode node) {
 		if (node==null || node.isNull()) {
 			return null;
 		} else if (node.isDouble()) {
