@@ -23,10 +23,16 @@ public interface ErrorResolver {
 	 */
 	JsonError resolveError(Throwable t, Method method, List<JsonNode> arguments);
 
+	public static interface JsonError {
+		int getCode();
+		int getHttpCode();
+		String getMessage();
+		Object getData();
+	}
 	/**
 	 * A JSON error.
 	 */
-	public static class JsonError {
+	public static class BasicJsonError implements JsonError {
 
 		private int code;
 		private String message;
@@ -38,7 +44,7 @@ public interface ErrorResolver {
 		 * @param message the message
 		 * @param data the data
 		 */
-		public JsonError(int code, String message, Object data) {
+		public BasicJsonError(int code, String message, Object data) {
 			this.code 		= code;
 			this.message	= message;
 			this.data		= data;
@@ -47,21 +53,25 @@ public interface ErrorResolver {
 		/**
 		 * @return the code
 		 */
-		protected int getCode() {
+		public int getCode() {
 			return code;
+		}
+		
+		public int getHttpCode() {
+			return 0;
 		}
 
 		/**
 		 * @return the message
 		 */
-		protected String getMessage() {
+		public String getMessage() {
 			return message;
 		}
 
 		/**
 		 * @return the data
 		 */
-		protected Object getData() {
+		public Object getData() {
 			return data;
 		}
 

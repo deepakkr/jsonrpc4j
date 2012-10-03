@@ -27,7 +27,7 @@ public class AnnotationsErrorResolver
 					String message = em.message()!=null && em.message().trim().length() > 0
 						? em.message()
 						: t.getMessage();
-					return new JsonError(em.code(), message,
+					return new BasicJsonError(em.code(), message,
 						new ErrorData(em.exception().getName(), message));
 				}
 			}

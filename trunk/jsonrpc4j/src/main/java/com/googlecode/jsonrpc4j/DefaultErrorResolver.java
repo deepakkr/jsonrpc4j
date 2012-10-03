@@ -21,7 +21,7 @@ public class DefaultErrorResolver
 	 */
 	public JsonError resolveError(
 		Throwable t, Method method, List<JsonNode> arguments) {
-		return new JsonError(0, t.getMessage(),
+		return new BasicJsonError(0, t.getMessage(),
 			new ErrorData(t.getClass().getName(), t.getMessage()));
 	}
 

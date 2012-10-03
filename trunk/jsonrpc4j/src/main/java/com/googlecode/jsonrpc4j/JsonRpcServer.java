@@ -25,6 +25,7 @@ import javax.portlet.ResourceResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -192,6 +193,21 @@ public class JsonRpcServer {
 	 * Handles a single request from the given {@link InputStream},
 	 * that is to say that a single {@link JsonNode} is read from
 	 * the stream and treated as a JSON-RPC request.  All responses
+	 * are written to the given {@link OutputStreamWrapper}.
+	 *
+	 * @param ips the {@link InputStream}
+	 * @param opsw the {@link OutputStreamWrapper}
+	 * @throws IOException on error
+	 */
+	public void handle(InputStream ips, OutputStreamWrapper opsw)
+		throws IOException {
+		handleNode(mapper.readTree(new NoCloseInputStream(ips)), opsw);
+	}
+	
+	/**
+	 * Handles a single request from the given {@link InputStream},
+	 * that is to say that a single {@link JsonNode} is read from
+	 * the stream and treated as a JSON-RPC request.  All responses
 	 * are written to the given {@link OutputStream}.
 	 *
 	 * @param ips the {@link InputStream}
@@ -200,7 +216,7 @@ public class JsonRpcServer {
 	 */
 	public void handle(InputStream ips, OutputStream ops)
 		throws IOException {
-		handleNode(mapper.readTree(new NoCloseInputStream(ips)), ops);
+		handleNode(mapper.readTree(new NoCloseInputStream(ips)), new com.googlecode.jsonrpc4j.OutputStreamWrapper.BasicOutputStreamWrapper(mapper, ops));
 	}
 
 	/**
@@ -250,16 +266,16 @@ public class JsonRpcServer {
 	 * @param ops the {@link OutputStream}
 	 * @throws IOException on error
 	 */
-	protected void handleNode(JsonNode node, OutputStream ops)
+	protected void handleNode(JsonNode node, OutputStreamWrapper opsw)
 		throws IOException {
 
 		// handle objects
 		if (node.isObject()) {
-			handleObject(ObjectNode.class.cast(node), ops);
+			handleObject(ObjectNode.class.cast(node), opsw);
 
 		// handle arrays
 		} else if (node.isArray()) {
-			handleArray(ArrayNode.class.cast(node), ops);
+			handleArray(ArrayNode.class.cast(node), opsw);
 
 		// bail on bad data
 		} else {
@@ -276,19 +292,20 @@ public class JsonRpcServer {
 	 * @param ops the {@link OutputStream}
 	 * @throws IOException on error
 	 */
-	protected void handleArray(ArrayNode node, OutputStream ops)
+	protected void handleArray(ArrayNode node, OutputStreamWrapper opsw)
 		throws IOException {
-		if (LOGGER.isLoggable(Level.FINE)) {
-			LOGGER.log(Level.FINE, "Handing "+node.size()+" requests");
-		}
-
-		// loop through each array element
-		ops.write('[');
-		for (int i=0; i<node.size(); i++) {
-			handleNode(node.get(i), ops);
-			if (i != node.size() - 1) ops.write(','); 
-		}
-		ops.write(']');
+		throw new RuntimeException("not implemented with http error code support yet");
+//		if (LOGGER.isLoggable(Level.FINE)) {
+//			LOGGER.log(Level.FINE, "Handing "+node.size()+" requests");
+//		}
+//
+//		// loop through each array element
+//		ops.write('[');
+//		for (int i=0; i<node.size(); i++) {
+//			handleNode(node.get(i), ops);
+//			if (i != node.size() - 1) ops.write(','); 
+//		}
+//		ops.write(']');
 	}
 
 	/**
@@ -299,7 +316,7 @@ public class JsonRpcServer {
 	 * @param ops the {@link OutputStream}
 	 * @throws IOException on error
 	 */
-	protected void handleObject(ObjectNode node, OutputStream ops)
+	protected void handleObject(ObjectNode node, OutputStreamWrapper opsw)
 		throws IOException {
 		if (LOGGER.isLoggable(Level.FINE)) {
 			LOGGER.log(Level.FINE, "Request: "+node.toString());
@@ -307,8 +324,8 @@ public class JsonRpcServer {
 
 		// validate request
 		if (!backwardsComaptible && !node.has("jsonrpc") || !node.has("method")) {
-			writeAndFlushValue(ops, createErrorResponse(
-				"jsonrpc", "null", -32600, "Invalid Request", null));
+			writeAndFlushResponse(opsw, createErrorResponse(
+				"jsonrpc", "null", StandardJsonError.INVALID_REQUEST, null));
 			return;
 		}
 
@@ -327,16 +344,16 @@ public class JsonRpcServer {
 		Set<Method> methods = new HashSet<Method>();
 		methods.addAll(ReflectionUtil.findMethods(getHandlerClass(), methodName));
 		if (methods.isEmpty()) {
-			writeAndFlushValue(ops, createErrorResponse(
-				jsonRpc, id, -32601, "Method not found", null));
+			writeAndFlushResponse(opsw, createErrorResponse(
+				jsonRpc, id, StandardJsonError.METHOD_NOT_FOUND, null));
 			return;
 		}
 
 		// choose a method
 		MethodAndArgs methodArgs = findBestMethodByParamsNode(methods, paramsNode);
 		if (methodArgs==null) {
-			writeAndFlushValue(ops, createErrorResponse(
-				jsonRpc, id, -32602, "Invalid method parameters", null));
+			writeAndFlushResponse(opsw, createErrorResponse(
+				jsonRpc, id, StandardJsonError.INVALID_PARAMS, null));
 			return;
 		}
 
@@ -373,18 +390,18 @@ public class JsonRpcServer {
 
 				// make sure we have a JsonError
 				if (error==null) {
-					error = new JsonError(
+					error = new com.googlecode.jsonrpc4j.ErrorResolver.BasicJsonError(
 						0, e.getMessage(), e.getClass().getName());
 				}
 			}
 
 			// the resoponse object
-			ObjectNode response = null;
+			JsonRpcServerResponse response = null;
 
 			// build error
 			if (error!=null) {
 				response = createErrorResponse(
-					jsonRpc, id, error.getCode(), error.getMessage(), error.getData());
+					jsonRpc, id, error.getCode(), 500, error.getMessage(), error.getData());
 
 			// build success
 			} else {
@@ -392,7 +409,7 @@ public class JsonRpcServer {
 			}
 
 			// write it
-			writeAndFlushValue(ops, response);
+			writeAndFlushResponse(opsw, response);
 		}
 
 		// log and potentially re-throw errors
@@ -442,25 +459,49 @@ public class JsonRpcServer {
 		Object result = m.invoke(handler, convertedParams);
 		return (m.getGenericReturnType()!=null) ? mapper.valueToTree(result) : null;
 	}
+	
+	protected static class JsonRpcServerResponse {
+		ObjectNode objectNode;
+		int httpCode;
+		public JsonRpcServerResponse(ObjectNode objectNode, int httpCode) {
+			this.objectNode = objectNode;
+			this.httpCode = httpCode;
+		}
+	}
 
 	/**
 	 * Convenience method for creating an error response.
 	 *
 	 * @param jsonRpc the jsonrpc string
 	 * @param id the id
+	 * @param jsonError a StandardJsonError enum
+	 * @param data the error data (if any)
+	 * @return the error response
+	 */
+	protected JsonRpcServerResponse createErrorResponse(
+		String jsonRpc, Object id, StandardJsonError jsonError, Object data) {
+		return createErrorResponse(jsonRpc, id, jsonError.getJsonCode(), jsonError.getHttpCode(), jsonError.getMessage(), data);
+	}
+	
+	/**
+	 * Convenience method for creating an error response.
+	 *
+	 * @param jsonRpc the jsonrpc string
+	 * @param id the id
 	 * @param code the error code
+	 * @param httpCode the http error code
 	 * @param message the error message
 	 * @param data the error data (if any)
 	 * @return the error response
 	 */
-	protected ObjectNode createErrorResponse(
-		String jsonRpc, Object id, int code, String message, Object data) {
+	protected JsonRpcServerResponse createErrorResponse(
+		String jsonRpc, Object id, int code, int httpCode, String message, Object data) {
 		ObjectNode response = mapper.createObjectNode();
 		ObjectNode error = mapper.createObjectNode();
 		error.put("code", code);
 		error.put("message", message);
 		if (data!=null) {
-			error.put("data",  mapper.valueToTree(data));
+			error.put("data", mapper.valueToTree(data));
 		}
 		response.put("jsonrpc", jsonRpc);
 		if (Integer.class.isInstance(id)) {
@@ -477,7 +518,7 @@ public class JsonRpcServer {
 			response.put("id", String.class.cast(id));
 		}
 		response.put("error", error);
-		return response;
+		return new JsonRpcServerResponse(response, httpCode);
 	}
 
 	/**
@@ -487,7 +528,7 @@ public class JsonRpcServer {
 	 * @param result
 	 * @return
 	 */
-	protected ObjectNode createSuccessResponse(String jsonRpc, Object id, JsonNode result) {
+	protected JsonRpcServerResponse createSuccessResponse(String jsonRpc, Object id, JsonNode result) {
 		ObjectNode response = mapper.createObjectNode();
 		response.put("jsonrpc", jsonRpc);
 		if (Integer.class.isInstance(id)) {
@@ -504,7 +545,7 @@ public class JsonRpcServer {
 			response.put("id", String.class.cast(id));
 		}
 		response.put("result", result);
-		return response;
+		return new JsonRpcServerResponse(response, 200);
 	}
 
 	/**
@@ -840,12 +881,13 @@ public class JsonRpcServer {
 	 * @param value the value to write
 	 * @throws IOException on error
 	 */
-	protected void writeAndFlushValue(OutputStream ops, Object value)
+	protected void writeAndFlushResponse(OutputStreamWrapper opsw, JsonRpcServerResponse response)
 		throws IOException {
-		mapper.writeValue(new NoCloseOutputStream(ops), value);
-		ops.flush();
+		opsw.writeResponse( response );
+//		mapper.writeValue(new NoCloseOutputStream(ops), value);
+//		ops.flush();
 	}
-
+	
 	/**
 	 * Simple inner class for the {@code findXXX} methods.
 	 */
