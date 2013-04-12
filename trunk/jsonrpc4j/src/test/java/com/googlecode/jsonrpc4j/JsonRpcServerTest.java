@@ -3,11 +3,17 @@ package com.googlecode.jsonrpc4j;
 import static org.junit.Assert.*;
 
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -381,6 +387,44 @@ public class JsonRpcServerTest {
 
 		assertTrue(json.get("id").isNull());
 	}
+	
+	@Test
+	public void callMethodWithPolymorphicCollection_truck() throws Exception {
+		jsonRpcServer.handle(new ClassPathResource("jsonRpcServerPolymorhpicCollectionMethodTrueTest.json").getInputStream(), baos);
+
+		String response = baos.toString(JSON_ENCODING);
+		System.out.println("RESPONSE T: "+response);
+		JsonNode json = mapper.readTree(response);
+		
+		JsonNode result = json.get("result");
+		
+		assertTrue( result.isArray() );
+		assertEquals(2, result.size());
+		assertTrue(result.get(0).has("type"));
+		assertTrue(result.get(1).has("type"));
+		
+		assertEquals( "truck", result.get(0).get("type").textValue());
+		assertEquals( "truck", result.get(0).get("type").textValue());
+	}
+	
+	@Test
+	public void callMethodWithPolymorphicCollection_van() throws Exception {
+		jsonRpcServer.handle(new ClassPathResource("jsonRpcServerPolymorhpicCollectionMethodFalseTest.json").getInputStream(), baos);
+
+		String response = baos.toString(JSON_ENCODING);
+		System.out.println("RESPONSE V: "+response);
+		JsonNode json = mapper.readTree(response);
+		
+		JsonNode result = json.get("result");
+		
+		assertTrue( result.isArray() );
+		assertEquals(2, result.size());
+		assertTrue(result.get(0).has("type"));
+		assertTrue(result.get(1).has("type"));
+		
+		assertEquals( "van", result.get(0).get("type").textValue());
+		assertEquals( "van", result.get(0).get("type").textValue());
+	}
 
 
 	// Service and service interfaces used in test
@@ -392,6 +436,7 @@ public class JsonRpcServerTest {
 		public String overloadedMethod(String stringParam1, String stringParam2);
 		public String overloadedMethod(int intParam1);
 		public String overloadedMethod(int intParam1, int intParam2);
+		public Collection<Automobile> testPolymorhpicCollectionMethod(boolean flag);
 	}
 	
 	private interface ServiceInterfaceWithParamNameAnnotaion {        
@@ -403,6 +448,46 @@ public class JsonRpcServerTest {
 		public String overloadedMethod(@JsonRpcParamName("param1") int intParam1, @JsonRpcParamName("param2") int intParam2);
 		
 		public String methodWithoutRequiredParam(@JsonRpcParamName("param1") String stringParam1, @JsonRpcParamName(value="param2") String stringParam2);
+	}
+	
+	
+	@JsonTypeInfo(
+		use = JsonTypeInfo.Id.NAME,
+		include = JsonTypeInfo.As.PROPERTY,
+		property = "type"
+	)
+	@JsonSubTypes({
+		@Type( value = Truck.class, name="truck" ),
+		@Type( value = Van.class, name="van" )
+	})
+	public interface Automobile {
+		public String getName();
+	}
+	
+	public class Truck implements Automobile {
+		public String name;
+		public int towingCapacity;
+		public Truck() { }
+		public Truck(String name, int towingCapacity) {
+			this.name = name;
+			this.towingCapacity = towingCapacity;
+		}
+		public String getName() {
+			return name;
+		}
+	}
+	
+	public class Van implements Automobile {
+		public String name;
+		public int numOfSeats;
+		public Van() { }
+		public Van(String name, int numOfSeats) {
+			this.name = name;
+			this.numOfSeats = numOfSeats;
+		}
+		public String getName() {
+			return name;
+		}
 	}
 
 	private class Service implements ServiceInterface, ServiceInterfaceWithParamNameAnnotaion {
@@ -429,6 +514,17 @@ public class JsonRpcServerTest {
 			return stringParam1+", "+stringParam2;
 		}
 		
+		public Collection<Automobile> testPolymorhpicCollectionMethod(boolean flag) {
+			List<Automobile> result = new ArrayList<Automobile>();
+			if (flag) {
+				result.add(new Truck("Bob", 21555));
+				result.add(new Truck("Bill", 5242));
+			} else {
+				result.add(new Van("Molly",7));
+				result.add(new Van("Sally",9));
+			}
+			return result;
+		}
 	}
 	
 }

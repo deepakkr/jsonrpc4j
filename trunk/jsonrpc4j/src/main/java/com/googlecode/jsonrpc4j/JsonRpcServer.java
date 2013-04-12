@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -25,15 +26,16 @@ import javax.portlet.ResourceResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.fasterxml.jackson.databind.util.TokenBuffer;
 import com.googlecode.jsonrpc4j.ErrorResolver.JsonError;
 
 /**
@@ -457,8 +459,44 @@ public class JsonRpcServer {
 
 		// invoke the method
 		Object result = m.invoke(handler, convertedParams);
-		return (m.getGenericReturnType()!=null) ? mapper.valueToTree(result) : null;
+		Type genericReturnType = m.getGenericReturnType();
+		if (genericReturnType!=null) {
+			if (Collection.class.isInstance(result) && genericReturnType instanceof ParameterizedType) {
+				try {
+					if (LOGGER.isLoggable(Level.FINE)) {
+						LOGGER.log(Level.FINE, "attempting custom collection serialization");
+					}
+					TypeFactory typeFactory = mapper.getTypeFactory();
+					JavaType rootType = typeFactory.constructCollectionType(Collection.class, typeFactory.constructType(((ParameterizedType) genericReturnType).getActualTypeArguments()[0]));
+					return valueToTree(mapper.writerWithType(rootType), result);
+				} catch (Exception e) {
+					LOGGER.log(Level.WARNING, "could not do custom collection serialization falling back to default", e);
+				}
+			}
+			return mapper.valueToTree(result);
+		} else {
+			return null;
+		}
+		//return (genericReturnType!=null) ? mapper.valueToTree(result) : null;
 	}
+	
+    @SuppressWarnings("unchecked")
+    public <T extends JsonNode> T valueToTree(ObjectWriter writer, Object fromValue)
+        throws IllegalArgumentException
+    {
+        if (fromValue == null) return null;
+        TokenBuffer buf = new TokenBuffer(mapper);
+        JsonNode result;
+        try {
+        	writer.writeValue(buf, fromValue);
+            JsonParser jp = buf.asParser();
+            result = mapper.readTree(jp);
+            jp.close();
+        } catch (IOException e) { // should not occur, no real i/o...
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
+        return (T) result;
+    } 
 	
 	protected static class JsonRpcServerResponse {
 		ObjectNode objectNode;
