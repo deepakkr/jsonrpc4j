@@ -4,12 +4,14 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.GenericDeclaration;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 import java.math.BigDecimal;
 import java.net.URLDecoder;
 import java.util.ArrayList;
@@ -467,7 +469,11 @@ public class JsonRpcServer {
 						LOGGER.log(Level.FINE, "attempting custom collection serialization");
 					}
 					TypeFactory typeFactory = mapper.getTypeFactory();
-					JavaType rootType = typeFactory.constructCollectionType(Collection.class, typeFactory.constructType(((ParameterizedType) genericReturnType).getActualTypeArguments()[0]));
+					Type actualTypeInCollection = ((ParameterizedType) genericReturnType).getActualTypeArguments()[0];
+					if (actualTypeInCollection instanceof TypeVariable) { // collection actually has a generic return type
+						actualTypeInCollection = ((TypeVariable) actualTypeInCollection).getBounds()[0];
+					}
+					JavaType rootType = typeFactory.constructCollectionType(Collection.class, typeFactory.constructType(actualTypeInCollection));
 					return valueToTree(mapper.writerWithType(rootType), result);
 				} catch (Exception e) {
 					LOGGER.log(Level.WARNING, "could not do custom collection serialization falling back to default", e);

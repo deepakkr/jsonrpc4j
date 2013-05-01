@@ -1,6 +1,7 @@
 package com.googlecode.jsonrpc4j;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -12,8 +13,8 @@ import org.junit.Test;
 import org.springframework.core.io.ClassPathResource;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -408,8 +409,46 @@ public class JsonRpcServerTest {
 	}
 	
 	@Test
+	public void callMethodWithGenericPolymorphicCollection_truck() throws Exception {
+		jsonRpcServer.handle(new ClassPathResource("jsonRpcServerGenericPolymorhpicCollectionMethodTrueTest.json").getInputStream(), baos);
+
+		String response = baos.toString(JSON_ENCODING);
+		System.out.println("RESPONSE T: "+response);
+		JsonNode json = mapper.readTree(response);
+		
+		JsonNode result = json.get("result");
+		
+		assertTrue( result.isArray() );
+		assertEquals(2, result.size());
+		assertTrue(result.get(0).has("type"));
+		assertTrue(result.get(1).has("type"));
+		
+		assertEquals( "truck", result.get(0).get("type").textValue());
+		assertEquals( "truck", result.get(0).get("type").textValue());
+	}
+	
+	@Test
 	public void callMethodWithPolymorphicCollection_van() throws Exception {
 		jsonRpcServer.handle(new ClassPathResource("jsonRpcServerPolymorhpicCollectionMethodFalseTest.json").getInputStream(), baos);
+
+		String response = baos.toString(JSON_ENCODING);
+		System.out.println("RESPONSE V: "+response);
+		JsonNode json = mapper.readTree(response);
+		
+		JsonNode result = json.get("result");
+		
+		assertTrue( result.isArray() );
+		assertEquals(2, result.size());
+		assertTrue(result.get(0).has("type"));
+		assertTrue(result.get(1).has("type"));
+		
+		assertEquals( "van", result.get(0).get("type").textValue());
+		assertEquals( "van", result.get(0).get("type").textValue());
+	}
+	
+	@Test
+	public void callMethodWithGenericPolymorphicCollection_van() throws Exception {
+		jsonRpcServer.handle(new ClassPathResource("jsonRpcServerGenericPolymorhpicCollectionMethodFalseTest.json").getInputStream(), baos);
 
 		String response = baos.toString(JSON_ENCODING);
 		System.out.println("RESPONSE V: "+response);
@@ -437,6 +476,7 @@ public class JsonRpcServerTest {
 		public String overloadedMethod(int intParam1);
 		public String overloadedMethod(int intParam1, int intParam2);
 		public Collection<Automobile> testPolymorhpicCollectionMethod(boolean flag);
+		<D extends Automobile> Collection<D> testGenericPolymorhpicCollectionMethod(boolean flag);
 	}
 	
 	private interface ServiceInterfaceWithParamNameAnnotaion {        
@@ -525,6 +565,11 @@ public class JsonRpcServerTest {
 			}
 			return result;
 		}
+		
+		public Collection<Automobile> testGenericPolymorhpicCollectionMethod(boolean flag) {
+			return testPolymorhpicCollectionMethod(flag);
+		}
+		
 	}
 	
 }
